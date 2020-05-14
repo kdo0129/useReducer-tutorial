@@ -1,6 +1,7 @@
 import React, { useRef, useMemo, useCallback, useReducer } from 'react';
 import UserList from './UserList';
 import CreateUser from './CreateUser';
+import useInput from './useInput';
 
 const countActiveUsers = (users) => {
 	console.log('카운트');
@@ -36,14 +37,6 @@ const initialState = {
 
 const reducer = (state, action) => {
 	switch (action.type) {
-		case 'CHANGE_INPUT':
-			return {
-				...state,
-				inputs: {
-					...state.inputs,
-					[action.name]: action.value,
-				},
-			};
 		case 'CREATE_USER':
 			return {
 				inputs: initialState.inputs,
@@ -71,17 +64,16 @@ const reducer = (state, action) => {
 };
 
 export default function App() {
+	const [{ username, age }, onChange, reset] = useInput({
+		username: '',
+		age: '',
+	});
+
 	const [state, dispatch] = useReducer(reducer, initialState);
 
 	const { users } = state;
-	const { username, age } = state.inputs;
 
 	const nextId = useRef(4);
-
-	const onInputChange = useCallback((e) => {
-		const { name, value } = e.target;
-		dispatch({ type: 'CHANGE_INPUT', name, value });
-	}, []);
 
 	const onCreate = useCallback(
 		(id) => {
@@ -90,8 +82,9 @@ export default function App() {
 				user: { id: nextId.current, username, age },
 			});
 			nextId.current += 1;
+			reset();
 		},
-		[username, age],
+		[username, age, reset],
 	);
 
 	const onRemove = useCallback((id) => {
@@ -109,7 +102,7 @@ export default function App() {
 			<CreateUser
 				username={username}
 				age={age}
-				onChange={onInputChange}
+				onChange={onChange}
 				onCreate={onCreate}
 			/>
 			<div>activeUser : {count}</div>
