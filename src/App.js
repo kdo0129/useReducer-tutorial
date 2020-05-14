@@ -1,7 +1,6 @@
-import React, { useRef, useMemo, useCallback, useReducer } from 'react';
+import React, { useMemo, useReducer, createContext } from 'react';
 import UserList from './UserList';
 import CreateUser from './CreateUser';
-import useInput from './useInput';
 
 const countActiveUsers = (users) => {
 	console.log('카운트');
@@ -63,50 +62,41 @@ const reducer = (state, action) => {
 	}
 };
 
+//UserDispatch Context 생성
+export const UserDispatch = createContext(null);
+
 export default function App() {
-	const [{ username, age }, onChange, reset] = useInput({
-		username: '',
-		age: '',
-	});
+	// const [{ username, age }, onChange, reset] = useInput({
+	// 	username: '',
+	// 	age: '',
+	// });
 
 	const [state, dispatch] = useReducer(reducer, initialState);
 
 	const { users } = state;
 
-	const nextId = useRef(4);
+	// const nextId = useRef(4);
 
-	const onCreate = useCallback(
-		(id) => {
-			dispatch({
-				type: 'CREATE_USER',
-				user: { id: nextId.current, username, age },
-			});
-			nextId.current += 1;
-			reset();
-		},
-		[username, age, reset],
-	);
-
-	const onRemove = useCallback((id) => {
-		dispatch({ type: 'REMOVE_USER', id });
-	}, []);
-
-	const onToggle = useCallback((id) => {
-		dispatch({ type: 'TOGGLE_USER', id });
-	}, []);
+	// const onCreate = useCallback(
+	// 	(id) => {
+	// 		dispatch({
+	// 			type: 'CREATE_USER',
+	// 			user: { id: nextId.current, username, age },
+	// 		});
+	// 		nextId.current += 1;
+	// 		reset();
+	// 	},
+	// 	[username, age, reset],
+	// );
 
 	const count = useMemo(() => countActiveUsers(users), [users]);
 
 	return (
-		<div>
-			<CreateUser
-				username={username}
-				age={age}
-				onChange={onChange}
-				onCreate={onCreate}
-			/>
+		// provider로 감싸고 내부 컴포넌트에서 context 값 사용
+		<UserDispatch.Provider value={dispatch}>
+			<CreateUser />
 			<div>activeUser : {count}</div>
-			<UserList users={users} onRemove={onRemove} onToggle={onToggle} />
-		</div>
+			<UserList users={users} />
+		</UserDispatch.Provider>
 	);
 }
