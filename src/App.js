@@ -1,90 +1,119 @@
-import React, { useState, useRef, useMemo, useCallback } from "react";
-import UserList from "./UserList";
-import CreateUser from "./CreateUser";
+import React, { useRef, useMemo, useCallback, useReducer } from 'react';
+import UserList from './UserList';
+import CreateUser from './CreateUser';
 
-const countActiveUser = users => {
-  console.log("카운트");
-  return users.filter(user => user.active).length;
+const countActiveUsers = (users) => {
+	console.log('카운트');
+	return users.filter((user) => user.active).length;
+};
+
+const initialState = {
+	users: [
+		{
+			id: 1,
+			username: 'Kim',
+			age: 20,
+			active: false,
+		},
+		{
+			id: 2,
+			username: 'Lee',
+			age: '30',
+			active: false,
+		},
+		{
+			id: 3,
+			username: 'Choi',
+			age: '50',
+			active: false,
+		},
+	],
+	inputs: {
+		username: '',
+		age: '',
+	},
+};
+
+const reducer = (state, action) => {
+	switch (action.type) {
+		case 'CHANGE_INPUT':
+			return {
+				...state,
+				inputs: {
+					...state.inputs,
+					[action.name]: action.value,
+				},
+			};
+		case 'CREATE_USER':
+			return {
+				inputs: initialState.inputs,
+				users: [...state.users, action.user],
+			};
+		case 'REMOVE_USER':
+			return {
+				...state,
+				users: state.users.filter((user) => {
+					return user.id !== action.id;
+				}),
+			};
+		case 'TOGGLE_USER':
+			return {
+				...state,
+				users: state.users.map((user) => {
+					return user.id === action.id
+						? { ...user, active: !user.active }
+						: user;
+				}),
+			};
+		default:
+			return state;
+	}
 };
 
 export default function App() {
-  const [inputs, setInputs] = useState({
-    username: "",
-    age: ""
-  });
-  const { username, age } = inputs;
+	const [state, dispatch] = useReducer(reducer, initialState);
 
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      username: "Kim",
-      age: 20
-    },
-    {
-      id: 2,
-      username: "Lee",
-      age: "30"
-    },
-    {
-      id: 3,
-      username: "Choi",
-      age: "40"
-    }
-  ]);
+	const { users } = state;
+	const { username, age } = state.inputs;
 
-  const nextId = useRef(4);
+	const nextId = useRef(4);
 
-  const onInputChange = useCallback(e => {
-    const { value, name } = e.target;
-    setInputs(inputs => ({
-      ...inputs,
-      [name]: value
-    }));
-  }, []);
+	const onInputChange = useCallback((e) => {
+		const { name, value } = e.target;
+		dispatch({ type: 'CHANGE_INPUT', name, value });
+	}, []);
 
-  const onCreate = useCallback(() => {
-    const user = {
-      username,
-      age,
-      id: nextId.current,
-      active: false
-    };
-    setUsers(users => [...users, user]);
-    setInputs({
-      username: "",
-      age: ""
-    });
-    nextId.current += 1;
-  }, [username, age]);
+	const onCreate = useCallback(
+		(id) => {
+			dispatch({
+				type: 'CREATE_USER',
+				user: { id: nextId.current, username, age },
+			});
+			nextId.current += 1;
+		},
+		[username, age],
+	);
 
-  const onRemove = useCallback(id => {
-    setUsers(users =>
-      users.filter(user => {
-        return user.id !== id;
-      })
-    );
-  }, []);
+	const onRemove = useCallback((id) => {
+		dispatch({ type: 'REMOVE_USER', id });
+	}, []);
 
-  const onToggle = useCallback(id => {
-    setUsers(users =>
-      users.map(user => {
-        return user.id === id ? { ...user, active: !user.active } : user;
-      })
-    );
-  }, []);
+	const onToggle = useCallback((id) => {
+		dispatch({ type: 'TOGGLE_USER', id });
+	}, []);
 
-  const count = useMemo(() => countActiveUser(users), [users]);
+	const count = useMemo(() => countActiveUsers(users), [users]);
 
-  return (
-    <div>
-      <CreateUser
-        username={username}
-        age={age}
-        onChange={onInputChange}
-        onCreate={onCreate}
-      />
-      <div>activeUser : {count}</div>
-      <UserList users={users} onRemove={onRemove} onToggle={onToggle} />
-    </div>
-  );
+	return (
+		<div>
+			<CreateUser
+				username={username}
+				age={age}
+				onChange={onInputChange}
+				onCreate={onCreate}
+			/>
+			<div>activeUser : {count}</div>
+			<UserList users={users} onRemove={onRemove} onToggle={onToggle} />
+		</div>
+	);
 }
